@@ -1,66 +1,951 @@
-body{
-    background-color: rgb(238, 208, 212) ;
-    font-family:'Times New Roman', Times, serif;
-    color: black;
+/* =========================================================
+   RUTINA SEMANAL — tablero de corcho con notas adhesivas
+   ========================================================= */
+
+@property --p {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
 }
 
+:root {
+  --tinta: #26304a;
+  --tinta-suave: #5d6579;
+  --rojo: #c8312f;
+  --verde: #1f8a4f;
+  --azul: #2a4fb0;
+  --papel: #fbf8f1;
+  --corcho: #c39563;
+  --marco: 14px;
+  --oscurecer: rgba(0, 0, 0, 0);
+  --brillo: 1;
+  color-scheme: light;
+}
 
-.main{
-    height: auto;
-    width:auto;
-    display: flex;
-    align-content: center;
-    align-items: center;
+/* Modo oscuro = el mismo tablero de noche, con poca luz */
+:root[data-theme="dark"] {
+  --oscurecer: rgba(12, 10, 26, 0.58);
+  --brillo: 0.82;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ============ Corcho ============ */
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Patrick Hand', 'Comic Sans MS', cursive;
+  font-size: 19px;
+  color: var(--tinta);
+  background-color: var(--corcho);
+  background-image:
+    linear-gradient(var(--oscurecer), var(--oscurecer)),
+    radial-gradient(ellipse at center, transparent 50%, rgba(45, 22, 4, 0.5) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .17 0 0 0 0 .06 1.3 0 0 0 -.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .96 0 0 0 0 .84 0 0 0 0 .62 0 1.5 0 0 -.95'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E");
+  background-size: auto, auto, 260px 260px, 180px 180px;
+  background-attachment: fixed;
+  transition: color 0.3s;
+}
+
+/* Marco de madera alrededor del tablero */
+html::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  border: var(--marco) solid;
+  border-image: linear-gradient(135deg, #8d5c2c, #6a401c 25%, #a06d3a 50%, #5c3818 75%, #8b5a2b) 1;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35), inset 0 6px 14px rgba(0, 0, 0, 0.45);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--azul);
+  outline-offset: 2px;
+}
+
+/* Papel genérico (cabecera, resumen, pie) */
+.papel,
+.cabecera__texto,
+.resumen,
+.pie {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.6), transparent 40%),
+    var(--papel);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.2),
+    0 14px 20px -12px rgba(0, 0, 0, 0.55);
+  filter: brightness(var(--brillo));
+}
+
+/* ============ Cabecera ============ */
+.cabecera {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 48px calc(var(--marco) + 18px) 18px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+}
+
+.cabecera__texto {
+  position: relative;
+  padding: 22px 32px 16px;
+  transform: rotate(-1.2deg);
+  border-radius: 2px;
+}
+
+/* Cinta pegante arriba de la hoja */
+.cabecera__texto::before,
+.pie::before {
+  content: '';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  width: 120px;
+  height: 30px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgba(255, 250, 230, 0.55);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  clip-path: polygon(0 0, 100% 0, 97% 25%, 100% 50%, 97% 75%, 100% 100%, 0 100%, 3% 75%, 0 50%, 3% 25%);
+}
+
+.fecha {
+  margin: 0;
+  font-family: 'Caveat', cursive;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--rojo);
+  text-transform: capitalize;
+}
+
+h1 {
+  display: inline-block;
+  margin: 0;
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: clamp(2.8rem, 7vw, 4.2rem);
+  line-height: 1;
+  /* trazo de resaltador detrás del título */
+  background: linear-gradient(100deg, transparent 2%, rgba(255, 214, 0, 0.6) 3% 96%, transparent 97%) 0 85% / 100% 40% no-repeat;
+}
+
+.mensaje {
+  margin: 6px 0 0;
+  color: var(--tinta-suave);
+}
+
+/* Resumen = etiqueta de papel con chinche */
+.resumen {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px 16px;
+  border-radius: 3px;
+  transform: rotate(1.8deg);
+}
+
+.resumen::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #8fb6ff, #2a4fb0 55%, #142a66);
+  box-shadow: 2px 5px 5px rgba(0, 0, 0, 0.4);
+}
+
+.anillo {
+  --p: 0;
+  position: relative;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--verde) calc(var(--p) * 1%), rgba(38, 48, 74, 0.12) 0);
+  transition: --p 0.6s ease;
+}
+
+.anillo::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--papel);
+  border: 1.5px dashed rgba(38, 48, 74, 0.3);
+}
+
+.anillo span {
+  position: relative;
+  font-family: 'Caveat', cursive;
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+.resumen__texto strong {
+  font-family: 'Caveat', cursive;
+  font-size: 1.6rem;
+}
+
+.resumen__texto small {
+  display: block;
+  color: var(--tinta-suave);
+  font-size: 0.9rem;
+}
+
+/* ============ Controles: pedazos de cinta washi ============ */
+.controles {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px calc(var(--marco) + 18px) 30px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filtro {
+  --cinta: #f6b4c4;
+  border: none;
+  padding: 8px 22px;
+  font-size: 1.05rem;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.28) 0 6px, transparent 6px 12px),
+    var(--cinta);
+  clip-path: polygon(0 0, 100% 0, 96% 20%, 100% 40%, 96% 60%, 100% 80%, 96% 100%, 0 100%, 4% 80%, 0 60%, 4% 40%, 0 20%);
+  opacity: 0.6;
+  transform: rotate(-1deg);
+  filter: brightness(var(--brillo));
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.filtro[data-filtro="hoy"] {
+  --cinta: #a8d8ea;
+  transform: rotate(1.5deg);
+}
+
+.filtro[data-filtro="pendientes"] {
+  --cinta: #c9e4a5;
+  transform: rotate(-2deg);
+}
+
+.filtro:hover {
+  opacity: 0.85;
+}
+
+.filtro.activo {
+  opacity: 1;
+  font-weight: 700;
+  transform: rotate(0) translateY(-3px) scale(1.06);
+}
+
+.acciones {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-icono {
+  width: 46px;
+  height: 46px;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  background: radial-gradient(circle at 35% 30%, #fffdf6, #e9e1cf);
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.25), 0 8px 12px -6px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s;
+}
+
+.btn-icono:hover {
+  transform: rotate(-15deg) scale(1.08);
+}
+
+.btn-peligro {
+  border: none;
+  padding: 9px 20px;
+  font-size: 1.05rem;
+  color: var(--rojo);
+  background: var(--papel);
+  border-radius: 2px;
+  transform: rotate(1deg);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 0 8px 12px -6px rgba(0, 0, 0, 0.5);
+  filter: brightness(var(--brillo));
+  transition: background-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+.btn-peligro:hover {
+  transform: rotate(-1deg) scale(1.04);
+}
+
+.btn-peligro.confirmar {
+  background: var(--rojo);
+  color: #fff;
+}
+
+/* ============ Notas adhesivas ============ */
+.tarjetas {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 12px calc(var(--marco) + 18px) 30px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+  gap: 42px 34px;
+  align-items: start;
+}
+
+.tarjeta {
+  --nota: #fff27a;
+  --pin: #e53935;
+  --rot: 0deg;
+  position: relative;
+  padding: 30px 20px 20px;
+  background:
+    linear-gradient(175deg, rgba(255, 255, 255, 0.45), transparent 28%),
+    linear-gradient(to bottom right, transparent 65%, rgba(0, 0, 0, 0.07)),
+    var(--nota);
+  /* esquina inferior derecha levantada */
+  border-radius: 2px 2px 70px 3px / 2px 2px 8px 3px;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.15),
+    0 14px 18px -12px rgba(0, 0, 0, 0.55),
+    10px 22px 22px -18px rgba(0, 0, 0, 0.5);
+  transform: rotate(var(--rot));
+  filter: brightness(var(--brillo));
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
+}
+
+.tarjeta:hover,
+.tarjeta:focus-within {
+  z-index: 2;
+  transform: rotate(0) translateY(-8px) scale(1.025);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.15),
+    0 26px 30px -16px rgba(0, 0, 0, 0.55),
+    14px 34px 30px -22px rgba(0, 0, 0, 0.45);
+}
+
+.tarjetas.animar .tarjeta {
+  animation: pegar 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: calc(var(--i) * 70ms);
+}
+
+/* Un color de nota por día */
+.tarjeta[data-dia="0"] { --nota: #fff27a; --pin: #e53935; }
+.tarjeta[data-dia="1"] { --nota: #ffc2d4; }
+.tarjeta[data-dia="2"] { --nota: #b9e3ff; --pin: #2e7d32; }
+.tarjeta[data-dia="3"] { --nota: #c8f0b4; }
+.tarjeta[data-dia="4"] { --nota: #ffd6a5; --pin: #6a1b9a; }
+.tarjeta[data-dia="5"] { --nota: #dccbff; }
+.tarjeta[data-dia="6"] { --nota: #b8f2e6; --pin: #f9a825; }
+
+/* Días pares: chinche · días impares: cinta pegante */
+.tarjeta::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.75), transparent 32%),
+    radial-gradient(circle at 50% 50%, var(--pin) 55%, rgba(0, 0, 0, 0.35) 100%),
+    var(--pin);
+  box-shadow: 3px 6px 6px rgba(0, 0, 0, 0.4);
+}
+
+.tarjeta[data-dia="1"]::before,
+.tarjeta[data-dia="3"]::before,
+.tarjeta[data-dia="5"]::before {
+  top: -15px;
+  width: 116px;
+  height: 32px;
+  margin-left: -58px;
+  border-radius: 0;
+  background: rgba(255, 252, 235, 0.55);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transform: rotate(-4deg);
+  clip-path: polygon(0 0, 100% 0, 97% 25%, 100% 50%, 97% 75%, 100% 100%, 0 100%, 3% 75%, 0 50%, 3% 25%);
+}
+
+.tarjeta__cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.tarjeta__cabeza h2 {
+  margin: 0;
+  font-family: 'Caveat', cursive;
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* "Hoy" encerrado en un círculo con marcador rojo */
+.insignia {
+  font-family: 'Caveat', cursive;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--rojo);
+  padding: 0 10px;
+  border: 2.5px solid var(--rojo);
+  border-radius: 55% 45% 50% 48% / 60% 50% 55% 45%;
+  transform: rotate(-8deg);
+}
+
+.contador {
+  font-family: 'Caveat', cursive;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+}
+
+.tarjeta.completa .contador {
+  color: var(--verde);
+}
+
+/* Barra de progreso como trazo de resaltador */
+.barra {
+  height: 10px;
+  margin: 12px 0 10px;
+  border-radius: 6px 3px 7px 2px;
+  background: rgba(38, 48, 74, 0.1);
+  overflow: hidden;
+}
+
+.barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: rgba(38, 48, 74, 0.6);
+  transition: width 0.5s ease;
+}
+
+.tarjeta.completa .barra span {
+  background: var(--verde);
+}
+
+/* Sello rojo cuando el día está completo */
+.sello {
+  position: absolute;
+  top: 44%;
+  right: 12px;
+  z-index: 3;
+  padding: 2px 14px;
+  font-family: Impact, 'Arial Black', sans-serif;
+  font-size: 1.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(200, 49, 47, 0.78);
+  border: 4px double rgba(200, 49, 47, 0.78);
+  border-radius: 8px;
+  transform: rotate(-14deg);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.tarjeta.sellar .sello {
+  animation: estampar 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+/* ============ Tareas (renglones) ============ */
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tarea {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-bottom: 1.5px solid rgba(38, 48, 74, 0.16);
+  transition: background-color 0.2s;
+}
+
+.tarea:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.casilla {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.etiqueta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 4px;
+  cursor: pointer;
+}
+
+/* Cuadrito dibujado a mano */
+.check {
+  position: relative;
+  flex-shrink: 0;
+  width: 21px;
+  height: 21px;
+  border: 2px solid var(--tinta);
+  border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px;
+  transform: rotate(-3deg);
+}
+
+.check svg {
+  position: absolute;
+  left: -3px;
+  top: -12px;
+  width: 32px;
+  height: 32px;
+  overflow: visible;
+}
+
+.check path {
+  fill: none;
+  stroke: var(--verde);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.casilla:checked + .etiqueta .check path {
+  stroke-dashoffset: 0;
+}
+
+.tarea.recien .casilla:checked + .etiqueta .check path {
+  animation: dibujar 0.35s ease-out both;
+}
+
+.casilla:focus-visible + .etiqueta .check {
+  outline: 3px solid var(--azul);
+  outline-offset: 3px;
+}
+
+/* Texto con tachón de lapicero */
+.texto {
+  position: relative;
+  overflow-wrap: anywhere;
+  transition: opacity 0.2s;
+}
+
+.texto::after {
+  content: '';
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  top: 52%;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--tinta);
+  transform: scaleX(0) rotate(-1deg);
+  transform-origin: left;
+}
+
+.tarea.hecha .texto {
+  opacity: 0.55;
+}
+
+.tarea.hecha .texto::after {
+  transform: scaleX(1) rotate(-1deg);
+}
+
+.tarea.recien.hecha .texto::after {
+  animation: tachar 0.35s 0.15s ease-out both;
+}
+
+.editor {
+  flex: 1;
+  min-width: 0;
+  margin: 4px 0;
+  padding: 5px 4px;
+  font: inherit;
+  color: var(--azul);
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  border-bottom: 2px solid var(--azul);
+  outline: none;
+}
+
+.mini {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 0.95rem;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s, transform 0.2s;
+}
+
+.tarea:hover .mini,
+.mini:focus-visible {
+  opacity: 0.8;
+}
+
+.mini:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+.mini.borrar:hover {
+  color: var(--rojo);
+}
+
+@media (hover: none) {
+  .mini {
+    opacity: 0.65;
+  }
+}
+
+.vacio {
+  margin: 8px 0;
+  padding: 12px 0;
+  text-align: center;
+  font-family: 'Caveat', cursive;
+  font-size: 1.5rem;
+  color: var(--tinta-suave);
+  border-bottom: 1.5px solid rgba(38, 48, 74, 0.16);
+}
+
+/* ============ Agregar tarea ============ */
+.agregar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.agregar input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  font: inherit;
+  color: var(--azul);
+  background: transparent;
+  border: none;
+  border-bottom: 2px dashed rgba(38, 48, 74, 0.35);
+  transition: border-color 0.2s;
+}
+
+.agregar input::placeholder {
+  color: var(--tinta-suave);
+  opacity: 0.8;
+}
+
+.agregar input:focus {
+  outline: none;
+  border-bottom: 2px solid var(--azul);
+}
+
+.agregar button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50% 45% 52% 48%;
+  font-family: 'Caveat', cursive;
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--papel);
+  background: var(--tinta);
+  box-shadow: 0 3px 5px -2px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.agregar button:hover {
+  background: var(--azul);
+  transform: rotate(90deg);
+}
+
+.agregar button:active {
+  transform: rotate(90deg) scale(0.9);
+}
+
+/* ============ Selección múltiple ============ */
+.btn-papel {
+  border: none;
+  padding: 9px 18px;
+  font-size: 1.05rem;
+  background: var(--papel);
+  border-radius: 2px;
+  transform: rotate(-1deg);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 0 8px 12px -6px rgba(0, 0, 0, 0.5);
+  filter: brightness(var(--brillo));
+  transition: transform 0.2s, background-color 0.2s, color 0.2s;
+}
+
+.btn-papel:hover {
+  transform: rotate(1deg) scale(1.04);
+}
+
+.btn-papel.activo {
+  background: var(--tinta);
+  color: var(--papel);
+}
+
+.modo-seleccion .tarea {
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.modo-seleccion .etiqueta {
+  pointer-events: none;
+}
+
+.modo-seleccion .mini {
+  display: none;
+}
+
+.tarea.seleccionada {
+  background: rgba(200, 49, 47, 0.16);
+  box-shadow: inset 0 0 0 2px rgba(200, 49, 47, 0.6);
+}
+
+.tarea.seleccionada:hover {
+  background: rgba(200, 49, 47, 0.22);
+}
+
+.tarea:focus-visible {
+  outline: 3px solid var(--azul);
+  outline-offset: 1px;
+}
+
+.sel-todas {
+  display: block;
+  margin: 0 0 6px auto;
+  padding: 2px 10px;
+  border: none;
+  background: none;
+  font-family: 'Caveat', cursive;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--rojo);
+  text-decoration: underline wavy rgba(200, 49, 47, 0.5);
+  text-underline-offset: 4px;
+}
+
+/* Barra flotante y aviso */
+.barra-seleccion,
+.aviso {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--marco) + 16px);
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100% - 2 * (var(--marco) + 16px));
+  padding: 12px 18px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.6), transparent 40%),
+    var(--papel);
+  border-radius: 3px;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2), 0 18px 30px -10px rgba(0, 0, 0, 0.6);
+  transform: translateX(-50%) rotate(-0.6deg);
+  animation: subir 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.barra-seleccion[hidden],
+.aviso[hidden] {
+  display: none;
+}
+
+.barra-seleccion span {
+  font-family: 'Caveat', cursive;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.barra-seleccion button,
+.aviso button {
+  border: 2px solid var(--tinta);
+  background: transparent;
+  padding: 4px 14px;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  font-size: 1rem;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.barra-seleccion button:hover,
+.aviso button:hover {
+  background: var(--tinta);
+  color: var(--papel);
+}
+
+.barra-seleccion .btn-borrar {
+  border-color: var(--rojo);
+  background: var(--rojo);
+  color: #fff;
+}
+
+.barra-seleccion .btn-borrar:hover {
+  background: #a42523;
+}
+
+.barra-seleccion .btn-borrar:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.aviso {
+  z-index: 61;
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(30px);
+  }
+}
+
+/* espacio extra abajo para que la barra no tape las notas */
+.modo-seleccion .tarjetas {
+  padding-bottom: 120px;
+}
+
+/* ============ Pie ============ */
+.pie {
+  position: relative;
+  width: fit-content;
+  max-width: calc(100% - 2 * (var(--marco) + 18px));
+  margin: 10px auto 48px;
+  padding: 14px 24px 10px;
+  text-align: center;
+  color: var(--tinta-suave);
+  font-size: 1rem;
+  transform: rotate(-0.8deg);
+}
+
+/* ============ Confeti ============ */
+.confeti {
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  z-index: 4;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  pointer-events: none;
+  animation: confeti 1.1s ease-out forwards;
+}
+
+/* ============ Animaciones ============ */
+@keyframes confeti {
+  to {
+    transform: translate(var(--x), var(--y)) rotate(var(--r));
+    opacity: 0;
+  }
+}
+
+@keyframes pegar {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) rotate(calc(var(--rot) * -3)) scale(1.08);
+  }
+}
+
+@keyframes dibujar {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes tachar {
+  from {
+    transform: scaleX(0) rotate(-1deg);
+  }
+  to {
+    transform: scaleX(1) rotate(-1deg);
+  }
+}
+
+@keyframes estampar {
+  from {
+    opacity: 0;
+    transform: rotate(-14deg) scale(2.6);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-14deg) scale(1);
+  }
+}
+
+/* ============ Celulares ============ */
+@media (max-width: 600px) {
+  :root {
+    --marco: 8px;
+  }
+
+  .cabecera {
+    padding-top: 36px;
+  }
+
+  .cabecera__texto,
+  .resumen {
+    width: 100%;
+  }
+
+  .controles {
     flex-direction: column;
-}
- 
+    align-items: stretch;
+  }
 
-
-.cardscontainer{
-   
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-gap: 200px;
-    width: auto;
-    height:auto;
-    justify-content: space-around;
-    font-size: x-large;
-    
-   
+  .acciones {
+    justify-content: flex-end;
+  }
 }
 
-.card{
-  
-    width: 300px;
-    height: auto;
-    background-color: rgb(97, 94, 94);
-    justify-items: center;
-    text-align:left;
-    border-radius: 10px;
-
-    
-    
-}
-
-.work{
-   
-    width:auto;
-    height: 40px;
-    margin: 6px;
-    border: 3px solid grey;
-    background-color:rgb(245, 127, 48);
-    text-align:left;
-    border-radius: 4px;
-    font-size: large;
-    border-radius:10px;
-    display: flex;
-    align-items: center;
-    
-}
-
-.dia{
-    background-color: rgb(160, 160, 160);
-    display: flex;
-    justify-content: space-around;
-    border-radius: 10px;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
